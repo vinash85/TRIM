@@ -1,25 +1,19 @@
 
-
-
-
-#identify the oxphos-related tf using new method
-
 #run in background
 
-FindPathwayTF<- function(filecistrome = "/liulab/xmwang/oxphos_proj/loading_data/cistrome/NFKBpath_cis_info.rds",
-                         genelist = hsa_KEGG.list$`NF-kappa B signaling pathway`,
+FindPathwayTF<- function(genelist = hsa_KEGG.list$`NF-kappa B signaling pathway`,
                          file_binding = "/liulab/xmwang/oxphos_proj/loading_data/cistrome/NFKBbinding.rds",
-                         file_score ="~/OXPHOS/tcga.features_oxphos.csv",
                          file_cor = "~/OXPHOS/ALL/NFKB_tf.dim.csv",
+                         filecistrome = "/liulab/xmwang/oxphos_proj/loading_data/cistrome/NFKBpath_cis_info.rds",
                          pathway_name ="NF-kappa B signaling pathway"){
   cistrome.intgrated<- getCistromeInfo(genelist=genelist,file = filecistrome)
-  tf_path_binding <-  FindBindingTFs(cistrome.intgrated= cistrome.intgrated,file = file_binding)
+  tf_path_binding <-  FindBindingTFs(cistrome.intgrated= cistrome.intgrated,
+                                     file = file_binding)
   tf_path_cor <- FindCorTF(pathway_name = pathway_name,
                            tfExpr_file="/liulab/xmwang/oxphos_proj/loading_data/cistrome//tf.exprdata.rds",
                            gsva_path ='/liulab/xmwang/oxphos_proj/loading_data/TCGA/TCGA_ssgsea_full/',
                            file_cor="~/OXPHOS/ALL/NFKB_tf.dim.csv")
-  #integrate 2nd and 3rd analysis
-  
+  out = list(tf_path_binding,tf_path_cor)
   return(out)
 }
 
@@ -185,5 +179,9 @@ getscore<- function(file,hsa_KEGG.list){
   
 }
 
-
+##########
+#run jobs
+hsa_KEGG.list<- readRDS("/liulab/xmwang/oxphos_proj/loading_data/annotation/hsa_KEGG.list.rds")
+FindPathwayTF()->nfkb.out
+saveRDS(nfkb.out,file = "~/OXPHOS/ALL/nfkb.tf.rds")
   
