@@ -1,1 +1,1 @@
-# OXPHOS
+# Transcription Regulator of Immune-Metabolism (TRIM) 
