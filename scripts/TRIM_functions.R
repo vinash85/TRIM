@@ -119,7 +119,7 @@ FindSgTF<- function(cistrome.intgrated, rpdata.rp.used,sg.indicator,
 }
 
 ### plot volcano plot
-plotSgVol<- function(data=trim_auc_gly,
+plotMetaSg<- function(data=meta_res,
                      xlab="Glycolysis regulatory potential",show.name=show.name){
   data %>%
     mutate(auc_ci = auc-CI,
@@ -137,19 +137,19 @@ plotSgVol<- function(data=trim_auc_gly,
 
 
 # input is the output from the metabolic pipeline
-readSgdata<- function(fileloc="/liulab/xmwang/oxphos_proj/code/trim_auc_gly.rds"){
-  trim_auc_gly = readRDS(fileloc)
-  trim_auc_gly = do.call(rbind,trim_auc_gly)
-  as.data.frame(trim_auc_gly) %>%
+readSgdata<- function(meta_res){
+  
+  meta_res = do.call(rbind,meta_res)
+  as.data.frame(meta_res) %>%
     rownames_to_column(var="gene") %>%
-    dplyr::rename(pvalue= 'Pr(>|z|)') ->trim_auc_gly
-  return(trim_auc_gly)
+    dplyr::rename(pvalue= 'Pr(>|z|)') ->meta_res
+  return(meta_res)
 }
 
-SgImmData<- function(trim_auc_gly,lmer.tf.dim1,thres.x = c(.15,.85),thres.y=.85){
+SgImmData<- function(meta_res,immune_res,thres.x = c(.15,.85),thres.y=.85){
 
 
-  inner_join(lmer.tf.dim1,trim_auc_gly,by=c("object"="gene")) %>%
+  inner_join(immune_res,meta_res,by=c("object"="gene")) %>%
     dplyr::rename(tvalue_immune="t value",tvalue_oxphos="z value",
                   pvalue_immune = "Pr(>|t|)",pvalue_oxphos = "pvalue") %>%
     dplyr::mutate(pvalue_immune = (-log10(pvalue_immune)),
@@ -165,22 +165,22 @@ SgImmData<- function(trim_auc_gly,lmer.tf.dim1,thres.x = c(.15,.85),thres.y=.85)
   thres.x.down = quantile(plot.data$coef_sd,thres.x[1],na.rm=T)
   plot.data %>%
     dplyr::mutate(color_col =if_else( pvalue_immune >1.3 &pvalue_auc>1.3 ,
-                                      case_when(coef_sd>thres.x.up  & auc>thres.y.up ~ "Immune_inactive_OXPHOS_active",
-                                                coef_sd<thres.x.down  & auc>thres.y.up ~ "Immune_active_OXPHOS_active",
+                                      case_when(coef_sd>thres.x.up  & auc>thres.y.up ~ "Immune_inactive_Sg_active",
+                                                coef_sd<thres.x.down  & auc>thres.y.up ~ "Immune_active_Sg_active",
                                                 TRUE ~"Not_signif"),
                                       "Not_signif")) %>%
     dplyr::mutate(color_col = factor(color_col,
-                                     levels = c("Immune_inactive_OXPHOS_active",
-                                                "Immune_active_OXPHOS_active",
+                                     levels = c("Immune_inactive_Sg_active",
+                                                "Immune_active_Sg_active",
                                                 "Not_signif")),
                   auc_ci = auc-CI) ->plot.data
   return(plot.data)
 }
 
-PlotSg<- function(gly.data,ylab="Glycolysis regulatory potential",show.name=show.name){
-  loc = which(gly.data$color_col!="Not_signif" )
+PlotSg<- function(merged_res,ylab="Glycolysis regulatory potential",show.name=show.name){
+  
 
-  gly.data %>%
+  merged_res %>%
     ggscatter(x="coef_sd",y="auc_ci",
               xlab = "Immune regulatory potential",
               ylab = ylab,
@@ -195,6 +195,36 @@ PlotSg<- function(gly.data,ylab="Glycolysis regulatory potential",show.name=show
     geom_hline(yintercept = .5,size=.3,color="black",linetype="dashed")->p
   return(p)
 }
+
+
+calc_tf_feature_lmer<- function(res.pca=res.pca,dim="Dim.1",
+                                cancer_info=oxphos.dataset.ck$cancer,
+                                tf.exprdata=tf.exprdata){
+  res.ind <- get_pca_ind(res.pca)
+  res.ind.contri<- as.data.frame(res.ind$coord[,1:5])
+  res.ind.contri$object <- rownames(res.ind.contri)
+  res.ind.contri$cancer = cancer_info
+  tf.dim.list=list()
+  n=1
+  colnames(tf.exprdata) = gsub(colnames(tf.exprdata),
+                               pattern = "-",replacement = "_")
+  
+  for (tf in setdiff(colnames(tf.exprdata),"object")) {
+    print(paste(n,tf,sep = ":"))
+    inner_join(tf.exprdata[,c("object",tf)],
+               res.ind.contri,by=c("object"="object")) %>%
+      lmer(as.formula(paste0(tf,"~",dim,"+(1|cancer)")),data = .) %>%
+      summary() ->tmp
+    tf.dim.list[[tf]]<- tmp$coefficients[2,,drop=F] 
+    n=n+1
+  }
+  tf.dim<- do.call(rbind,tf.dim.list)
+  tf.dim<- as.data.frame(tf.dim)
+  tf.dim$object = names(tf.dim.list)
+  return(tf.dim)
+}
+
+
 
 
 
