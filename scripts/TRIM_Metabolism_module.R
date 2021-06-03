@@ -66,7 +66,7 @@ calc.joint.auc = function(mat, response){
 }
 
 
-calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,oxphos.indicator,
+FindPathwayTF<- function(cistrome.intgrated, rpdata.rp.used,oxphos.indicator,
                          filename="~/OXPHOS/cistrome/auc.rds"){
   require(pROC)
   require(lmerTest)
@@ -84,10 +84,6 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,oxphos.indicator,
       glmer(oxphos_gene~RP+(1|sample_id),family = binomial,data = tc.cancer)->mod.tmp
     }
     
-    # #get auc
-    # predpr <- predict(mod.tmp,type=c("response"))
-    # roc_obj <- roc( tc.cancer$oxphos_gene~ predpr)
-    #get pvalue
     tmp<-as.data.frame(coef(summary(mod.tmp) ))
     #get auc 
     sample.id = tc.cancer$sample_id
@@ -110,7 +106,7 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,oxphos.indicator,
 }
 
 ####################
-rpdata.rp.data<- processRP()
+rpdata.rp.data<- processRP(RPloc="/liulab/xmwang/oxphos_proj/loading_data/cistrome/human_100kRP.hd5")
 cistrome.info<- fread("/liulab/xmwang/oxphos_proj/loading_data/cistrome/DC_haveProcessed_20190506_filepath_qc.xls")
 library(clusterProfiler)
 c2 <- read.gmt("/liulab/xmwang/oxphos_proj/loading_data/annotation/c2.cp.kegg.v6.2.symbols.gmt")
@@ -123,7 +119,7 @@ outlist<- assemble_data(cistrome.info = cistrome.info,
                         rpdata.rp.pcd = rpdata.rp.data$rpdata.rp.pcd )
 saveRDS(outlist,file = "./outlist_pro.rds")
 
-pro.auc<- calc_auc_pval(cistrome.intgrated = outlist$cistrome.intgrated,
+pro.auc<- FindPathwayTF(cistrome.intgrated = outlist$cistrome.intgrated,
                         rpdata.rp.used = outlist$rpdata.rp.used,
                         oxphos.indicator = outlist$oxphos.indicator,
                         filename = "./trim_auc_pro.rds"
