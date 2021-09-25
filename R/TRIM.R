@@ -1,8 +1,10 @@
-TRIM = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL) {
+TRIM = function(pathways, cistrome.hdf5.path, single.cell.reference = NULL) {
+  require(data.table)
+  require(tidyverse)
 	# regulatory (metabolic) module
-	metabolic.result = metabolic.pipeline(pathways.list, cistrome.dataset.path=cistrome.dataset.path)
+	metabolic.result = regulatory.pipeline(pathways.list, cistrome.location=cistrome.hdf5.path)
 	# immune module 
-	immune.result = immune.module(single.cell.reference)
+	immune.result = immune.module()
 	# integration 
 	result = integration(metabolic.result, immune.result)
 

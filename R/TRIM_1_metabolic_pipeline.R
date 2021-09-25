@@ -1,22 +1,22 @@
+
 #####################
 ##  TRIM metabolic module
 #####################
 ## input any meaningful signature, and predict potential regulators of this signature
+#"/liulab/xmwang/oxphos_proj/loading_data/cistrome/human_100kRP.hd5"
 
-library(data.table)
-library(tidyverse)
-
-processRP<- function(RPloc="/liulab/xmwang/oxphos_proj/loading_data/cistrome/human_100kRP.hd5"){
+processRP<- function(cistrome.location){
   require(rhdf5)
-  rpdata.id <- h5read(RPloc,"IDs")
-  rpdata.rp <- h5read(RPloc,"RPnormalize")
-  rpdata.ref <- h5read(RPloc,"RefSeq")
+  rpdata.id <- h5read(cistrome.location,"IDs")
+  rpdata.rp <- h5read(cistrome.location,"RPnormalize")
+  rpdata.ref <- h5read(cistrome.location,"RefSeq")
   rpdata.rp<- as.data.frame(rpdata.rp)
   rownames(rpdata.rp)<- rpdata.id
   colnames(rpdata.rp)<- rpdata.ref
   
-  
-  library(reshape2)
+  require(data.table)
+  require(tidyverse)
+  require(reshape2)
   rpdata.rp$sample_id = rownames(rpdata.rp)
   rpdata.rp.melt = melt(rpdata.rp,id= "sample_id",variable.name = "gene",value.name = "RP")
   rpdata.rp.melt$gene <-str_remove(pattern = ".*:",rpdata.rp.melt$gene) 
@@ -29,7 +29,9 @@ processRP<- function(RPloc="/liulab/xmwang/oxphos_proj/loading_data/cistrome/hum
 
 
 
-assemble_data<- function(cistrome.info,rpdata.rp.pcd,sg,rpdata.rp){
+assemble_data<- function(cistrome.info,rpdata.rp.pcd,pathways,rpdata.rp){
+  require(data.table)
+  require(tidyverse)
   #ca: atac-seq and dnase data
   cistrome.info_used <- cistrome.info[,1:4] %>%
     dplyr::filter(!(factor_type%in% c("None","not sure","other","hm","ca")))  %>%
@@ -37,7 +39,7 @@ assemble_data<- function(cistrome.info,rpdata.rp.pcd,sg,rpdata.rp){
   
   cistrome.intgrated<- inner_join(rpdata.rp.pcd,cistrome.info_used[,c(1,3)],
                                   by=c("sample_id"="DCid"))   %>%
-    mutate(oxphos_gene = if_else(gene%in% sg,1,0)) %>%
+    mutate(oxphos_gene = if_else(gene%in% pathways,1,0)) %>%
     dplyr::rename(RP="V1",TF="factor") 
   
   
@@ -45,9 +47,9 @@ assemble_data<- function(cistrome.info,rpdata.rp.pcd,sg,rpdata.rp){
   rpdata.rp.used=drop_na(rpdata.rp.used)
   
   all.genes = sapply(colnames(rpdata.rp.used), function(tt) strsplit(tt, split=":")[[1]][5])
-  oxphos.indicator = (all.genes %in% sg)+0
+  pathways.indicator = (all.genes %in% pathways)+0
   
-  out.list=list(oxphos.indicator=oxphos.indicator,
+  out.list=list(pathways.indicator=pathways.indicator,
                 cistrome.intgrated=cistrome.intgrated,
                 rpdata.rp.used=rpdata.rp.used)
   return(out.list)
@@ -64,8 +66,8 @@ calc.joint.auc = function(mat, response){
 }
 
 
-calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,oxphos.indicator,
-                         filename="~/OXPHOS/cistrome/auc.rds"){
+calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
+                         filename=NULL){
   require(pROC)
   require(lmerTest)
   require(lme4)
@@ -89,14 +91,14 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,oxphos.indicator,
     common.id= intersect(rownames(rpdata.rp.used) ,sample.id)
     if (!is_empty(common.id)) {
       
-      calc.joint.auc(as.matrix(rpdata.rp.used[common.id,]),oxphos.indicator)->tmp.auc
+      calc.joint.auc(as.matrix(rpdata.rp.used[common.id,]),pathways.indicator)->tmp.auc
       tmp$auc=tmp.auc[1]
       tmp$CI=tmp.auc[2]
     }else{
       next
     }
     tmp[2,]->tf_oxphos_effect[[tf]]
-    saveRDS(tf_oxphos_effect,file = filename)
+    if(!is.null(filnename)) saveRDS(tf_oxphos_effect,file = filename)
     n=n+1
   }
   
@@ -104,44 +106,25 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,oxphos.indicator,
   
 }
 
+regulatory.pipeline<- function(
+                          pathways,
+                          cistrome.location="data/human_100kRP.hd5",
+                          out_filename=NULL,
+                          ){
 
-####################
-# example to run the pipeline
-# read cistrome information
-cistrome.info<- fread("/liulab/xmwang/oxphos_proj/loading_data/cistrome/DC_haveProcessed_20190506_filepath_qc.xls")
-
-# input signature
-library(clusterProfiler)
-c2 <- read.gmt("/liulab/xmwang/oxphos_proj/loading_data/annotation/c2.cp.kegg.v6.2.symbols.gmt")
-gly.gene = c2[grep("GLYCOLYSIS",c2$ont,ignore.case = T),]$gene
-outlist<- assemble_data(cistrome.info = cistrome.info, 
-                       sg = gly.gene,
-                       rpdata.rp = rpdata.rp.data$rpdata.rp,
-                        rpdata.rp.pcd = rpdata.rp.data$rpdata.rp.pcd )
-saveRDS(outlist,file = "./outlist_gly.rds")
-
-gly.auc<- calc_auc_pval(cistrome.intgrated = outlist$cistrome.intgrated,
-                        rpdata.rp.used = outlist$rpdata.rp.used,
-                        oxphos.indicator = outlist$oxphos.indicator,
-                        filename = "./trim_auc_gly.rds")
-print("complete gly auc calculation!")
-
-
-##########
-# optional 
-# run this only when your input signature more than one 
-# note: run each signature separately and code below tells how to combine them
-# for example: the trim_auc_gly,trim_auc_fat,trim_auc_oxphos,trim_auc_tca
-# are corresponding to outputs of four signatures
-
-auc_ci_mat<- as.matrix(data.frame(oxphos = trim_auc_oxphos$auc-trim_auc_oxphos$CI,
-                                  gly = trim_auc_gly$auc-trim_auc_gly$CI,
-                                  tca = trim_auc_tca$auc-trim_auc_tca$CI,
-                                  fat = trim_auc_fat$auc-trim_auc_fat$CI))
-rownames(auc_ci_mat)=trim_auc_gly$gene
-
-sum.model <- data.frame(auc_ci=rowMeans(auc_ci_mat),
-                        TF = trim_auc_gly$gene)
-
-saveRDS(sum.model, file = "sum.metabolic.model.rds")
-
+  #cistrome.info available in R/sysdata.rda which is automatically loaded
+  print("Identifying regulators of input pathways...")
+  rpdata.rp.data = processRP(cistrome.location=cistrome.location)
+  outlist<- assemble_data(cistrome.info = cistrome.info, 
+                          pathways = pathways,
+                          rpdata.rp = rpdata.rp.data$rpdata.rp,
+                          rpdata.rp.pcd = rpdata.rp.data$rpdata.rp.pcd)
+  auc.res<- calc_auc_pval(cistrome.intgrated = outlist$cistrome.intgrated,
+                          rpdata.rp.used = outlist$rpdata.rp.used,
+                          pathways.indicator = outlist$pathways.indicator,
+                          filename = out_filename)
+  return(auc.res)
+  print("complete calculation!")
+  
+}
+####
