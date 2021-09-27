@@ -1,5 +1,5 @@
-#' @importFrom magrittr %>%
 #' Download data for TRIM
+#' @importFrom magrittr %>%
 #'
 #' @param download.path Folder to store downloaded data. By default the data is stored at "data/" in the package folder 
 #'

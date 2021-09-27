@@ -3,7 +3,3 @@
 export(TRIM)
 export(download.data)
 importFrom(magrittr,"%>%")
-importFrom(magrittr,"for")
-importFrom(magrittr,Download)
-importFrom(magrittr,TRIM)
-importFrom(magrittr,data)
