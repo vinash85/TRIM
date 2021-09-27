@@ -1,7 +1,4 @@
-#' Download data to download path (input for TRIM)
-#'
-#' @param download.path Folder to store downloaded data. By default the data is stored at "data/" in the package folder 
-#'
+
 #' @export
 download.data = function(download.path=NULL) {
 	if(is.null(download.path)){
