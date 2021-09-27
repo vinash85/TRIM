@@ -10,7 +10,7 @@ processRP <- function(cistrome.location){
   
   rpdata.rp$sample_id = rownames(rpdata.rp)
   rpdata.rp.melt = reshape2::melt(rpdata.rp,id= "sample_id",variable.name = "gene",value.name = "RP")
-  rpdata.rp.melt$gene <-str_remove(pattern = ".*:",rpdata.rp.melt$gene) 
+  rpdata.rp.melt$gene <-stringr::str_remove(pattern = ".*:",rpdata.rp.melt$gene) 
   data.table::setDT(rpdata.rp.melt)[, mean(RP), by = c("sample_id","gene")]->rpdata.rp.pcd
   
   return(list(rpdata.rp.pcd=rpdata.rp.pcd,
