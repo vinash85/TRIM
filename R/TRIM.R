@@ -1,4 +1,4 @@
-TRIM = function(pathways, cistrome.hdf5.path, single.cell.reference = NULL) {
+TRIM = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL) {
   require(data.table)
   require(tidyverse)
 	# regulatory (metabolic) module
