@@ -12,7 +12,6 @@ Imports:
     data.table,
     tidyverse,
     rhdf5,
-    data.table,
     reshape2,
     dplyr,
     pROC,

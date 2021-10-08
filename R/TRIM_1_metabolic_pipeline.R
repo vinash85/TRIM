@@ -1,9 +1,10 @@
 
 #' @importFrom magrittr %>%
+#' @import data.table
 processRP <- function(cistrome.location){
   rpdata.id <- rhdf5::h5read(cistrome.location,"IDs")
-  rpdata.rp <- h5read(cistrome.location,"RPnormalize")
-  rpdata.ref <- h5read(cistrome.location,"RefSeq")
+  rpdata.rp <- rhdf5::h5read(cistrome.location,"RPnormalize")
+  rpdata.ref <- rhdf5::h5read(cistrome.location,"RefSeq")
   rpdata.rp<- as.data.frame(rpdata.rp)
   rownames(rpdata.rp)<- rpdata.id
   colnames(rpdata.rp)<- rpdata.ref
@@ -11,7 +12,7 @@ processRP <- function(cistrome.location){
   rpdata.rp$sample_id = rownames(rpdata.rp)
   rpdata.rp.melt = reshape2::melt(rpdata.rp,id= "sample_id",variable.name = "gene",value.name = "RP")
   rpdata.rp.melt$gene <-stringr::str_remove(pattern = ".*:",rpdata.rp.melt$gene) 
-  data.table::setDT(rpdata.rp.melt)[, mean(RP), by = c("sample_id","gene")]->rpdata.rp.pcd
+  setDT(rpdata.rp.melt)[, mean(RP), by = c("sample_id","gene")]->rpdata.rp.pcd
   
   return(list(rpdata.rp.pcd=rpdata.rp.pcd,
               rpdata.rp=rpdata.rp))

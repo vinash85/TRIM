@@ -1,3 +1,5 @@
+
+#' @export
 TRIM = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL) {
   require(data.table)
   require(tidyverse)
