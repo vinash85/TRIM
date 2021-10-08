@@ -1,11 +1,7 @@
 
-###############
-#integration pipeline
-###############
-# immune.result: comb.imm.rds in TRIM_2_immune_pipeline.R
-# metabolic.result : sum.model in TRIM_1_metabolic_pipeline.R
-integrate.modules = function(metabolic.result, immune.result) {
-  final.result <- inner_join(immune.result,metabolic.result,by=c("object"="TF")) %>%
+
+integrate.modules <- function(metabolic.result, immune.result) {
+  final.result <- dplyr::inner_join(immune.result,metabolic.result,by=c("object"="TF")) %>%
   dplyr::mutate(coef_sd =case_when(Estimate>0 ~ Estimate-1.96 *`Std. Error`,
    Estimate<0 ~ -(abs(Estimate)-1.96 *`Std. Error`)) )%>%
   dplyr::mutate(coef_sd = if_else(Estimate>0 & coef_sd <0,0,coef_sd),
@@ -24,5 +20,5 @@ integrate.modules = function(metabolic.result, immune.result) {
    levels = c("Immune_inactive_OXPHOS_active",
     "Immune_active_OXPHOS_active",
     "Not_signif")))
-  final.result 
+  return(final.result)
 }

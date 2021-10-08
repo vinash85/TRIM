@@ -1,5 +1,5 @@
 # Transcription Regulator of Immune-Metabolism (TRIM) 
-*Authors: Avinash Das Sahu, Xiaoman Wang, Keith Flaherty and X. Shiley Liu 
+*Authors: Avinash Das Sahu, Xiaoman Wang, X. Shirley Liu, and Keith Flaherty
 
 ## Description 
 

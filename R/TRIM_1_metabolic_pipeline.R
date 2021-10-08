@@ -1,25 +1,16 @@
 
-#####################
-##  TRIM metabolic module
-#####################
-## input any meaningful signature, and predict potential regulators of this signature
-#"/liulab/xmwang/oxphos_proj/loading_data/cistrome/human_100kRP.hd5"
-
-processRP<- function(cistrome.location){
-  require(rhdf5)
-  rpdata.id <- h5read(cistrome.location,"IDs")
+#' @importFrom magrittr %>%
+processRP <- function(cistrome.location){
+  rpdata.id <- rhdf5::h5read(cistrome.location,"IDs")
   rpdata.rp <- h5read(cistrome.location,"RPnormalize")
   rpdata.ref <- h5read(cistrome.location,"RefSeq")
   rpdata.rp<- as.data.frame(rpdata.rp)
   rownames(rpdata.rp)<- rpdata.id
   colnames(rpdata.rp)<- rpdata.ref
   
-  require(data.table)
-  require(tidyverse)
-  require(reshape2)
   rpdata.rp$sample_id = rownames(rpdata.rp)
-  rpdata.rp.melt = melt(rpdata.rp,id= "sample_id",variable.name = "gene",value.name = "RP")
-  rpdata.rp.melt$gene <-str_remove(pattern = ".*:",rpdata.rp.melt$gene) 
+  rpdata.rp.melt = reshape2::melt(rpdata.rp,id= "sample_id",variable.name = "gene",value.name = "RP")
+  rpdata.rp.melt$gene <-stringr::str_remove(pattern = ".*:",rpdata.rp.melt$gene) 
   data.table::setDT(rpdata.rp.melt)[, mean(RP), by = c("sample_id","gene")]->rpdata.rp.pcd
   
   return(list(rpdata.rp.pcd=rpdata.rp.pcd,
@@ -29,24 +20,22 @@ processRP<- function(cistrome.location){
 
 
 
-assemble_data<- function(cistrome.info,rpdata.rp.pcd,pathways,rpdata.rp){
-  require(data.table)
-  require(tidyverse)
+assemble_data <- function(cistrome.info,rpdata.rp.pcd,pathways,rpdata.rp){
   #ca: atac-seq and dnase data
   cistrome.info_used <- cistrome.info[,1:4] %>%
     dplyr::filter(!(factor_type%in% c("None","not sure","other","hm","ca")))  %>%
     dplyr::mutate(DCid=as.character(DCid))
   
-  cistrome.intgrated<- inner_join(rpdata.rp.pcd,cistrome.info_used[,c(1,3)],
+  cistrome.intgrated<- dplyr::inner_join(rpdata.rp.pcd,cistrome.info_used[,c(1,3)],
                                   by=c("sample_id"="DCid"))   %>%
-    mutate(oxphos_gene = if_else(gene%in% pathways,1,0)) %>%
+    dplyr::mutate(oxphos_gene = if_else(gene%in% pathways,1,0)) %>%
     dplyr::rename(RP="V1",TF="factor") 
   
   
   rpdata.rp.used = rpdata.rp[rownames(rpdata.rp)%in% cistrome.info_used$DCid,]
-  rpdata.rp.used=drop_na(rpdata.rp.used)
+  rpdata.rp.used=tidyr::drop_na(rpdata.rp.used)
   
-  all.genes = sapply(colnames(rpdata.rp.used), function(tt) strsplit(tt, split=":")[[1]][5])
+  all.genes = sapply(colnames(rpdata.rp.used), function(tt) data.table::strsplit(tt, split=":")[[1]][5])
   pathways.indicator = (all.genes %in% pathways)+0
   
   out.list=list(pathways.indicator=pathways.indicator,
@@ -55,7 +44,7 @@ assemble_data<- function(cistrome.info,rpdata.rp.pcd,pathways,rpdata.rp){
   return(out.list)
 }
 
-calc.joint.auc = function(mat, response){
+calc.joint.auc <- function(mat, response){
   xx = apply(mat, 1, function(tt) 
     c(pROC::roc(response, as.numeric(tt), ci=T)$ci)
   )
@@ -67,11 +56,7 @@ calc.joint.auc = function(mat, response){
 
 
 calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
-                         filename=NULL){
-  require(pROC)
-  require(lmerTest)
-  require(lme4)
-  require(rlang)
+                         filename=NULL) {
   tf_oxphos_effect=list()
   
   n=1
@@ -79,9 +64,9 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
     print(paste(n,tf,sep = ":"))
     cistrome.intgrated[cistrome.intgrated$TF==tf,] ->tc.cancer
     if (length(unique(tc.cancer$sample_id))==1) {
-      glm(oxphos_gene~RP,data = tc.cancer,family = binomial)->mod.tmp
+      stats::glm(oxphos_gene~RP,data = tc.cancer,family = binomial)->mod.tmp
     }else{
-      glmer(oxphos_gene~RP+(1|sample_id),family = binomial,data = tc.cancer)->mod.tmp
+      lmerTest::glmer(oxphos_gene~RP+(1|sample_id),family = binomial,data = tc.cancer)->mod.tmp
     }
     
     #get pvalue
@@ -106,15 +91,12 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
   
 }
 
-regulatory.pipeline<- function(
-                          pathways,
-                          cistrome.location="data/human_100kRP.hd5",
-                          out_filename=NULL,
-                          ){
-
+regulatory.pipeline <- function(pathways,
+                    cistrome.location = "data/human_100kRP.hd5") {
+  out_filename <- NULL 
   #cistrome.info available in R/sysdata.rda which is automatically loaded
   print("Identifying regulators of input pathways...")
-  rpdata.rp.data = processRP(cistrome.location=cistrome.location)
+  rpdata.rp.data <- processRP(cistrome.location=cistrome.location)
   outlist<- assemble_data(cistrome.info = cistrome.info, 
                           pathways = pathways,
                           rpdata.rp = rpdata.rp.data$rpdata.rp,
@@ -123,8 +105,6 @@ regulatory.pipeline<- function(
                           rpdata.rp.used = outlist$rpdata.rp.used,
                           pathways.indicator = outlist$pathways.indicator,
                           filename = out_filename)
-  return(auc.res)
   print("complete calculation!")
-  
+  return(auc.res)
 }
-####
