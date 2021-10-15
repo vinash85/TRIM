@@ -36,7 +36,7 @@ assemble_data <- function(cistrome.info,rpdata.rp.pcd,pathways,rpdata.rp){
   rpdata.rp.used = rpdata.rp[rownames(rpdata.rp)%in% cistrome.info_used$DCid,]
   rpdata.rp.used=tidyr::drop_na(rpdata.rp.used)
   
-  all.genes = sapply(colnames(rpdata.rp.used), function(tt) data.table::strsplit(tt, split=":")[[1]][5])
+  all.genes = sapply(colnames(rpdata.rp.used), function(tt) strsplit(tt, split=":")[[1]][5])
   pathways.indicator = (all.genes %in% pathways)+0
   
   out.list=list(pathways.indicator=pathways.indicator,
