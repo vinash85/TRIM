@@ -61,7 +61,7 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
   tf_oxphos_effect=list()
   
   n=1
-  for (tf in unique(cistrome.intgrated$TF)) {
+  for (tf in unique(cistrome.intgrated$TF)[1:2]) {
     print(paste(n,tf,sep = ":"))
     cistrome.intgrated[cistrome.intgrated$TF==tf,] ->tc.cancer
     if (length(unique(tc.cancer$sample_id))==1) {
