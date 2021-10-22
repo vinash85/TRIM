@@ -1,6 +1,6 @@
 
 #' @export
-TRIM = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL, debug = FALSE) {
+BipotentR = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL, test = FALSE) {
   require(data.table)
   require(tidyverse)
 	# regulatory (metabolic) module
@@ -8,7 +8,7 @@ TRIM = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL,
 	# immune module 
 	immune.result = immune.module()
 	# integration 
-	result = integration(metabolic.result, immune.result)
+	result = integrate.modules(metabolic.result, immune.result)
 
 	list(result, metabolic.result=metabolic.result, immune.module=immune.result)
 
