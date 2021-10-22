@@ -67,7 +67,7 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
     if (length(unique(tc.cancer$sample_id))==1) {
       stats::glm(oxphos_gene~RP,data = tc.cancer,family = binomial)->mod.tmp
     }else{
-      lmerTest::glmer(oxphos_gene~RP+(1|sample_id),family = binomial,data = tc.cancer)->mod.tmp
+      lme4::glmer(oxphos_gene~RP+(1|sample_id),family = binomial,data = tc.cancer)->mod.tmp
     }
     
     #get pvalue
