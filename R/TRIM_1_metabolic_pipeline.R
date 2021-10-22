@@ -57,11 +57,13 @@ calc.joint.auc <- function(mat, response){
 
 
 calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
-                         filename=NULL) {
+                         filename=NULL, debug = FALSE) {
   tf_oxphos_effect=list()
   
   n=1
-  for (tf in unique(cistrome.intgrated$TF)[1:2]) {
+  TFs =unique(cistrome.intgrated$TF) 
+  if(debug) TFs = TFs[1:2]
+  for (tf in TFs) {
     print(paste(n,tf,sep = ":"))
     cistrome.intgrated[cistrome.intgrated$TF==tf,] ->tc.cancer
     if (length(unique(tc.cancer$sample_id))==1) {
@@ -84,7 +86,7 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
       next
     }
     tmp[2,]->tf_oxphos_effect[[tf]]
-    if(!is.null(filnename)) saveRDS(tf_oxphos_effect,file = filename)
+    if(!is.null(filename)) saveRDS(tf_oxphos_effect,file = filename)
     n=n+1
   }
   
@@ -93,7 +95,7 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
 }
 
 regulatory.pipeline <- function(pathways,
-                    cistrome.location = "data/human_100kRP.hd5") {
+                    cistrome.location = "data/human_100kRP.hd5", debug = FALSE) {
   out_filename <- NULL 
   #cistrome.info available in R/sysdata.rda which is automatically loaded
   print("Identifying regulators of input pathways...")
@@ -105,7 +107,7 @@ regulatory.pipeline <- function(pathways,
   auc.res<- calc_auc_pval(cistrome.intgrated = outlist$cistrome.intgrated,
                           rpdata.rp.used = outlist$rpdata.rp.used,
                           pathways.indicator = outlist$pathways.indicator,
-                          filename = out_filename)
-  print("complete calculation!")
+                          filename = out_filename, debug=debug)
+  print("regulation module calculation completed!")
   return(auc.res)
 }

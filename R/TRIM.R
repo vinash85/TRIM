@@ -1,6 +1,6 @@
 
 #' @export
-TRIM = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL) {
+TRIM = function(pathways.list, cistrome.hdf5.path, single.cell.reference = NULL, debug = FALSE) {
   require(data.table)
   require(tidyverse)
 	# regulatory (metabolic) module
