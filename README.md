@@ -35,5 +35,10 @@ The outputs will be stored in `bipotent.targets`
 tca.pathway =  c2.kegg[c2.kegg$term=="KEGG_CITRATE_CYCLE_TCA_CYCLE",]$gene  
 ## default location download.data store file
 cistrome.hdf5.path =  sprintf("%s/data//human_100kRP.hd5", system.file(package = "TRIM")) 
-bipotent.targets = TRIM(tca.pathway, cistrome.hdf5.path)
+bipotent.targets = BipotentR(tca.pathway, cistrome.hdf5.path)
 ```
+
+### License
+
+TRIM is [licensed](https://github.com/dmcable/RCTD/blob/master/LICENSE)
+under the GNU General Public License v3.0.
