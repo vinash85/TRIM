@@ -108,6 +108,10 @@ regulatory.pipeline <- function(pathways,
                           rpdata.rp.used = outlist$rpdata.rp.used,
                           pathways.indicator = outlist$pathways.indicator,
                           filename = out_filename, debug=debug)
+  regulation.result = do.call(rbind,auc.res) %>% as.data.table %>% .[,TF:=names(auc.res)]
+  regulation.result[,auc_ci:=auc-CI]
+  setnames(regulation.result, 1:4, c("Estimate", "SE", "zval", "p.val"))
+
   print("regulation module calculation completed!")
-  return(auc.res)
+  return(regulation.result)
 }

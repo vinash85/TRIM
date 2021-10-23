@@ -1,12 +1,13 @@
 Package: TRIM
 Type: Package
-Title: PUT TITLE HERE
+Title: Targets identification for bipotent drugs – single drugs that can kill cancer by multiple mechanisms
 Version: 0.0.1
 Date: 2021-09-22
 Author: Phillip B. Nicol
 Maintainer: Phillip B. Nicol <philnicol740@gmail.com>
 Description: PUT DESCRIPTION HERE
 License: GPL (>= 2)
+LazyData: true
 Depends: R (>= 3.6.0)
 Imports: 
     data.table,
@@ -15,7 +16,9 @@ Imports:
     reshape2,
     dplyr,
     pROC,
+    stats,
     stringr,
+    lme4,
     lmerTest
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr
