@@ -2,5 +2,6 @@
 
 export(BipotentR)
 export(download.data)
+export(regulatory.pipeline)
 import(data.table)
 importFrom(magrittr,"%>%")
