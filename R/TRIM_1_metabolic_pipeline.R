@@ -94,6 +94,7 @@ calc_auc_pval<- function(cistrome.intgrated, rpdata.rp.used,pathways.indicator,
   
 }
 
+#' @export
 regulatory.pipeline <- function(pathways,
                     cistrome.location = "data/human_100kRP.hd5", debug = FALSE) {
   out_filename <- NULL 
